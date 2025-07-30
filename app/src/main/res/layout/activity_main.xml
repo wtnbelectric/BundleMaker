@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="シリアル番号紐づけアプリ プロトタイプ版"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/product_serial_search_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="①製品シリアル検索"
+        app:layout_constraintTop_toBottomOf="@+id/title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/robot_serial_enter_button"
+        app:layout_constraintHorizontal_weight="1"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="4dp"/>
+
+    <Button
+        android:id="@+id/robot_serial_enter_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="②ロボット番号"
+        app:layout_constraintTop_toTopOf="@+id/product_serial_search_button"
+        app:layout_constraintStart_toEndOf="@+id/product_serial_search_button"
+        app:layout_constraintEnd_toStartOf="@+id/controller_serial_enter_button"
+        app:layout_constraintHorizontal_weight="1"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        />
+
+    <Button
+        android:id="@+id/controller_serial_enter_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="③コントローラ番号"
+        app:layout_constraintTop_toTopOf="@+id/robot_serial_enter_button"
+        app:layout_constraintStart_toEndOf="@+id/robot_serial_enter_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="8dp"/>
+
+    <LinearLayout
+        android:id="@+id/product_table_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/product_table"
+        app:layout_constraintTop_toBottomOf="@+id/product_serial_search_button"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="?attr/colorPrimaryVariant"> <!-- 例: ヘッダー背景色 -->
+
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="製造No."
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="10sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="ロボNo."
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="コンNo."
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="10sp"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:text="商談No."
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            android:visibility="gone"
+            android:textSize="10sp"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:text="発番時刻"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            android:visibility="gone"
+            android:textSize="10sp"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:text="採番時刻"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            android:visibility="gone"
+            android:textSize="10sp"/>
+
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/product_table"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/product_table_header"
+        app:layout_constraintBottom_toTopOf="@+id/commit_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <Button
+        android:id="@+id/commit_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="確定"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
