@@ -1,30 +1,36 @@
-        val controlSerial = findViewById<TextView>(R.id.confirm_control_serial)
-        val registerBtn = findViewById<Button>(R.id.confirm_register_button)
-        val modifyBtn = findViewById<Button>(R.id.confirm_modify_button)
+package com.example.bundlemaker
+
+import android.app.Activity
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.example.bundlemaker.model.Product
+import java.io.Serializable
+
+class ConfirmActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_confirm)
+
+        // すべてのレコードを受け取る
+        val allProducts = intent.getSerializableExtra("all_products") as? ArrayList<Product>
+
+        val textView = findViewById<TextView>(R.id.confirm_title)
+        if (allProducts != null && allProducts.isNotEmpty()) {
+            val sb = StringBuilder()
+            allProducts.forEachIndexed { idx, p ->
+                sb.append("${idx + 1}: 製造No=${p.product_serial}, ロボNo=${p.robot_serial}, コンNo=${p.control_serial}\n")
+            }
+            textView.text = sb.toString()
+        } else {
+            textView.text = "データがありません"
+        }
+
         val cancelBtn = findViewById<Button>(R.id.confirm_cancel_button)
-
-        productSerial.text = product?.product_serial ?: ""
-        robotSerial.text = product?.robot_serial ?: ""
-        controlSerial.text = product?.control_serial ?: ""
-
-        registerBtn.setOnClickListener {
-            val result = Intent().apply {
-                putExtra("action", "register")
-            }
-            setResult(Activity.RESULT_OK, result)
-            finish()
-        }
-        modifyBtn.setOnClickListener {
-            val result = Intent().apply {
-                putExtra("action", "modify")
-            }
-            setResult(Activity.RESULT_OK, result)
-            finish()
-        }
         cancelBtn.setOnClickListener {
-            setResult(Activity.RESULT_CANCELED)
             finish()
         }
     }
 }
-

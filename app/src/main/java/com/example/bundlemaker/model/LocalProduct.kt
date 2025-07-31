@@ -2,12 +2,8 @@ package com.example.bundlemaker.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.Index
 
-@Entity(
-    tableName = "local_products",
-    indices = [Index(value = ["product_serial"], unique = true)]
-)
+@Entity(tableName = "local_products")
 data class LocalProduct(
     @PrimaryKey val product_serial: String,
     val robot_serial: String? = null,

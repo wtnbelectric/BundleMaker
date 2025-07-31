@@ -10,10 +10,10 @@ import com.example.bundlemaker.R
 import com.example.bundlemaker.model.Product
 
 class ProductAdapter(
-    private val onRowClick: ((Int) -> Unit)? = null
+    private val onRowSelected: (Int) -> Unit
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
-    private val products = mutableListOf<Product>()
-    private var selectedPosition: Int = -1
+    private var products = mutableListOf<Product>()
+    var selectedPosition: Int = -1
 
     fun setProducts(list: List<Product>) {
         products.clear()
@@ -55,11 +55,9 @@ class ProductAdapter(
             else Color.TRANSPARENT
         )
         holder.itemView.setOnClickListener {
-            val prev = selectedPosition
             selectedPosition = position
-            notifyItemChanged(prev)
-            notifyItemChanged(position)
-            onRowClick?.invoke(position)
+            notifyDataSetChanged()
+            onRowSelected(position)
         }
     }
 

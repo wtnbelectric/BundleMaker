@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
 
     <TextView
         android:id="@+id/confirm_title"
@@ -11,120 +12,65 @@
         android:text="入力内容の確認"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <TextView
-        android:id="@+id/label_product_serial"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="製造番号:"
-        app:layout_constraintTop_toBottomOf="@id/confirm_title"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="24dp"
-        android:layout_marginStart="16dp"/>
+        android:text="製造No."/>
     <TextView
         android:id="@+id/confirm_product_serial"
-package com.example.bundlemaker
-
-import android.app.Activity
-import android.content.Intent
-import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import com.example.bundlemaker.model.Product
-
-class ConfirmActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_confirm)
-
-        val product = intent.getSerializableExtra("product") as? Product
-        val productSerial = findViewById<TextView>(R.id.confirm_product_serial)
-        val robotSerial = findViewById<TextView>(R.id.confirm_robot_serial)
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="@id/label_product_serial"
-        app:layout_constraintStart_toEndOf="@id/label_product_serial"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="16dp"/>
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
 
     <TextView
-        android:id="@+id/label_robot_serial"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ロボット番号:"
-        app:layout_constraintTop_toBottomOf="@id/label_product_serial"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"/>
+        android:text="ロボNo."/>
     <TextView
         android:id="@+id/confirm_robot_serial"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="@id/label_robot_serial"
-        app:layout_constraintStart_toEndOf="@id/label_robot_serial"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="16dp"/>
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
 
     <TextView
-        android:id="@+id/label_control_serial"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="コントローラ番号:"
-        app:layout_constraintTop_toBottomOf="@id/label_robot_serial"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"/>
+        android:text="コンNo."/>
     <TextView
         android:id="@+id/confirm_control_serial"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="@id/label_control_serial"
-        app:layout_constraintStart_toEndOf="@id/label_control_serial"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="16dp"/>
+        android:textSize="16sp"
+        android:layout_marginBottom="24dp"/>
 
-    <Button
-        android:id="@+id/confirm_register_button"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="登録"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/confirm_modify_button"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintHorizontal_weight="1"/>
-    <Button
-        android:id="@+id/confirm_modify_button"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="修正"
-        app:layout_constraintStart_toEndOf="@id/confirm_register_button"
-        app:layout_constraintEnd_toStartOf="@id/confirm_cancel_button"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintHorizontal_weight="1"/>
-    <Button
-        android:id="@+id/confirm_cancel_button"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="キャンセル"
-        app:layout_constraintStart_toEndOf="@id/confirm_modify_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintHorizontal_weight="1"/>
+        android:orientation="horizontal"
+        android:gravity="center">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <Button
+            android:id="@+id/confirm_register_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="登録"
+            android:layout_marginEnd="16dp"/>
 
+        <Button
+            android:id="@+id/confirm_modify_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="修正"
+            android:layout_marginEnd="16dp"/>
+
+        <Button
+            android:id="@+id/confirm_cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="キャンセル"/>
+    </LinearLayout>
+</LinearLayout>
