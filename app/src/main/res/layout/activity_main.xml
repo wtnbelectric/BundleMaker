@@ -33,14 +33,28 @@
     <!-- 右上：同期ボタン（リフレッシュアイコンに変更） -->
     <ImageButton
         android:id="@+id/sync_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
         android:src="@android:drawable/ic_popup_sync"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="更新"
+        android:contentDescription="同期"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="8dp"/>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ボタン群（水平3分割） -->
     <LinearLayout
@@ -151,6 +165,7 @@
         android:id="@+id/product_table"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:contentDescription="製品一覧テーブル"
         app:layout_constraintTop_toBottomOf="@id/product_table_header"
         app:layout_constraintBottom_toTopOf="@id/commit_button"
         app:layout_constraintStart_toStartOf="parent"

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BundleMaker</string>
+    <string name="accessibility_product_list">製品一覧</string>
 </resources>

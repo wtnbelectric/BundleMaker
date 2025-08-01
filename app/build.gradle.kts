@@ -8,6 +8,10 @@ android {
     namespace = "com.example.bundlemaker"
     compileSdk = 35
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     defaultConfig {
         applicationId = "com.example.bundlemaker"
         minSdk = 23

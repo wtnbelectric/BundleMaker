@@ -1,10 +1,12 @@
 package com.example.bundlemaker.adapter
 
 import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bundlemaker.R
 import com.example.bundlemaker.model.Product
@@ -15,10 +17,12 @@ class ProductAdapter(
     private var products = mutableListOf<Product>()
     var selectedPosition: Int = -1
 
-    fun setProducts(list: List<Product>) {
-        products.clear()
-        products.addAll(list)
+    fun setProducts(products: List<Product>) {
+        Log.d("ProductAdapter", "Setting ${products.size} products")
+        this.products = products.toMutableList()
+        Log.d("ProductAdapter", "Products set, notifying data change")
         notifyDataSetChanged()
+        Log.d("ProductAdapter", "Data set changed notification complete")
     }
 
     fun addProduct(product: Product) {
@@ -36,6 +40,7 @@ class ProductAdapter(
     fun getProductAt(position: Int): Product? =
         if (position in products.indices) products[position] else null
 
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_product_row, parent, false)
@@ -51,8 +56,11 @@ class ProductAdapter(
         holder.controlSerial.text = product.control_serial ?: ""
         // 商談No.や時刻は非表示または未実装
         holder.itemView.setBackgroundColor(
-            if (position == selectedPosition) Color.parseColor("#D0E8FF")
-            else Color.TRANSPARENT
+            if (selectedPosition == position) {
+                ContextCompat.getColor(holder.itemView.context, android.R.color.holo_blue_light)
+            } else {
+                Color.TRANSPARENT
+            }
         )
         holder.itemView.setOnClickListener {
             selectedPosition = position

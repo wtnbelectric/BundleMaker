@@ -3,9 +3,12 @@ package com.example.bundlemaker
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +22,7 @@ import com.example.bundlemaker.model.LocalProduct
 import com.example.bundlemaker.model.Product
 import com.example.bundlemaker.network.ProductApiService
 import com.example.bundlemaker.network.ProductRequest
+import com.example.bundlemaker.network.ProductResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,6 +31,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : AppCompatActivity() {
     private lateinit var productAdapter: ProductAdapter
+    private lateinit var progressBar: ProgressBar
     private var currentProducts: MutableList<Product> = mutableListOf()
     private var selectedRowIndex: Int = -1
 
@@ -34,6 +39,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        val products = intent.getParcelableArrayListExtra<Product>("all_products") ?: emptyList()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -48,14 +56,23 @@ class MainActivity : AppCompatActivity() {
         val syncBtn = findViewById<ImageButton>(R.id.sync_button)
         val confirmBtn = findViewById<Button>(R.id.confirm_button)
 
+        // ProgressBarの初期化
+        progressBar = findViewById(R.id.progressBar)
+
         // RecyclerViewセットアップ
         val recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.product_table)
+        // レイアウトマネージャーを設定（これが抜けていました）
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        
         productAdapter = ProductAdapter { position ->
             selectedRowIndex = position
             updateButtonStates()
         }
         recyclerView.adapter = productAdapter
         productAdapter.setProducts(currentProducts)
+        
+        // デバッグ用：RecyclerViewの設定を確認
+        Log.d("MainActivity", "RecyclerView setup complete. Has layout manager: ${recyclerView.layoutManager != null}")
 
         // ボタンリスナー
         productSerialBtn.setOnClickListener {
@@ -145,95 +162,178 @@ class MainActivity : AppCompatActivity() {
         }
 
         syncBtn.setOnClickListener {
-            // サーバーへ完成レコード送信・未完成レコード取得
-            lifecycleScope.launch {
-                // 完成レコードのみ抽出
-                val completed = currentProducts.filter {
-                    !it.product_serial.isNullOrBlank() &&
-                    !it.robot_serial.isNullOrBlank() &&
-                    !it.control_serial.isNullOrBlank() &&
-                    it.updated_at != null
-                }
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("http://your-server-url/") // サーバーURLを適宜修正
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                val api = retrofit.create(ProductApiService::class.java)
-                var successCount = 0
-                var failCount = 0
-
-                // 完成レコード送信
-                for (product in completed) {
-                    val req = ProductRequest(
-                        product_serial = product.product_serial,
-                        robot_serial = product.robot_serial,
-                        control_serial = product.control_serial,
-                        sales_id = product.sales_id
-                    )
-                    val resp = withContext(Dispatchers.IO) {
-                        try {
-                            // ↓ここを正しいメソッド名に修正
-                            val response = api.postProduct(req)
-                            response.isSuccessful
-                        } catch (e: Exception) {
-                            false
-                        }
-                    }
-                    if (resp) successCount++ else failCount++
-                }
-
-                // 未完成レコード取得
-                val incomplete = withContext(Dispatchers.IO) {
-                    try {
-                        val response = api.getIncompleteProducts()
-                        if (response.isSuccessful) {
-                            // ↓ここでList<Product>にキャスト
-                            response.body() as? List<Product> ?: emptyList()
-                        } else emptyList()
-                    } catch (e: Exception) {
-                        emptyList<Product>()
-                    }
-                }
-                // 画面に反映
-                currentProducts.clear()
-                currentProducts.addAll(incomplete)
-                productAdapter.setProducts(currentProducts)
-                selectedRowIndex = -1
-                updateButtonStates()
-
-                Toast.makeText(
-                    this@MainActivity,
-                    "送信: $successCount 件, 失敗: $failCount 件\n未完成データを再取得しました",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
+                syncIncompleteProducts()
         }
 
         confirmBtn.setOnClickListener {
-            // APIで全てのレコードを取得し、確認画面で表示
             lifecycleScope.launch {
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("http://your-server-url/") // サーバーURLを適宜修正
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                val api = retrofit.create(ProductApiService::class.java)
-                val allProducts = withContext(Dispatchers.IO) {
-                    try {
-                        val response = api.getAllProducts()
-                        if (response.isSuccessful) {
-                            response.body() as? List<Product> ?: emptyList()
-                        } else emptyList()
-                    } catch (e: Exception) {
-                        emptyList<Product>()
+                // ローディング表示
+                progressBar.visibility = View.VISIBLE
+
+                try {
+                    // サーバーから全レコードを取得
+                    val allProducts = withContext(Dispatchers.IO) {
+                        try {
+                            val retrofit = Retrofit.Builder()
+                                .baseUrl("http://192.168.5.72:5000/")
+                                .addConverterFactory(GsonConverterFactory.create())
+                                .build()
+
+                            val api = retrofit.create(ProductApiService::class.java)
+                            val response = api.getAllProducts()
+
+                            if (response.isSuccessful) {
+                                response.body()?.map { responseItem ->
+                                    Product(
+                                        product_serial = responseItem.product_serial,
+                                        robot_serial = responseItem.robot_serial,
+                                        control_serial = responseItem.control_serial,
+                                        sales_id = responseItem.sales_id,
+                                        created_at = responseItem.created_at,
+                                        updated_at = responseItem.updated_at,
+                                        isLocalOnly = false
+                                    )
+                                } ?: emptyList()
+                            } else {
+                                emptyList()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            emptyList()
+                        }
                     }
+
+                    // 確認画面を表示
+                    val intent = Intent(this@MainActivity, ConfirmActivity::class.java).apply {
+                        putParcelableArrayListExtra("all_products", ArrayList(allProducts))
+                    }
+                    startActivity(intent)
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "データの取得に失敗しました: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } finally {
+                    // ローディングを非表示
+                    progressBar.visibility = View.GONE
                 }
-                val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
-                intent.putExtra("all_products", ArrayList(allProducts))
-                startActivity(intent)
             }
         }
 
+        /*
+        confirmBtn.setOnClickListener {
+            try {
+                // 現在のリストを新しいArrayListとしてコピー
+                val productsToPass = ArrayList<Product>().apply {
+                    addAll(currentProducts.map { 
+                        Product(
+                            product_serial = it.product_serial,
+                            robot_serial = it.robot_serial,
+                            control_serial = it.control_serial,
+                            sales_id = it.sales_id,
+                            created_at = it.created_at,
+                            updated_at = it.updated_at,
+                            isLocalOnly = it.isLocalOnly
+                        )
+                    })
+                }
+                
+                val intent = Intent(this@MainActivity, ConfirmActivity::class.java).apply {
+                    putParcelableArrayListExtra("all_products", productsToPass)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, "確認画面を開けませんでした: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }*/
+
         updateButtonStates()
+    }
+
+    private fun syncIncompleteProducts() {
+        lifecycleScope.launch {
+            progressBar.visibility = View.VISIBLE
+            Log.d("MainActivity", "Starting to fetch incomplete products...")
+
+            try {
+                val incompleteProducts = withContext(Dispatchers.IO) {
+                    try {
+                        val retrofit = Retrofit.Builder()
+                            .baseUrl("http://192.168.5.72:5000/")
+                            .addConverterFactory(GsonConverterFactory.create())
+                            .build()
+
+                        val api = retrofit.create(ProductApiService::class.java)
+                        Log.d("MainActivity", "Calling API to get incomplete products...")
+                        val response = api.getIncompleteProducts()
+                        Log.d("MainActivity", "API response code: ${response.code()}")
+                        Log.d("MainActivity", "API response body: ${response.body()}")
+
+                        if (response.isSuccessful) {
+                            val products = response.body()?.map { productResponse ->
+                                Product(
+                                    product_serial = productResponse.product_serial,
+                                    robot_serial = productResponse.robot_serial,
+                                    control_serial = productResponse.control_serial,
+                                    sales_id = productResponse.sales_id,
+                                    created_at = productResponse.created_at,
+                                    updated_at = productResponse.updated_at,
+                                    isLocalOnly = false
+                                )
+                            } ?: emptyList()
+                            Log.d("MainActivity", "Successfully mapped ${products.size} products")
+                            products
+                        } else {
+                            Log.e("MainActivity", "API call failed with code: ${response.code()}")
+                            emptyList()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        emptyList()
+                    }
+                }
+
+                // Update the RecyclerView with the new data
+                Log.d("MainActivity", "Updating UI with ${incompleteProducts.size} products")
+                runOnUiThread {
+                    Log.d("MainActivity", "Current products before update: ${currentProducts.size}")
+                    currentProducts.clear()
+                    currentProducts.addAll(incompleteProducts)
+                    Log.d("MainActivity", "Current products after update: ${currentProducts.size}")
+                    
+                    // アダプタにデータを設定
+                    productAdapter.setProducts(currentProducts)
+                    Log.d("MainActivity", "Adapter item count: ${productAdapter.itemCount}")
+                    
+                    // Clear selection when updating the list
+                    selectedRowIndex = -1
+                    updateButtonStates()
+                    
+                    // Show a toast with the number of records fetched
+                    val message = if (incompleteProducts.isEmpty()) {
+                        "未完了のレコードはありません"
+                    } else {
+                        "${incompleteProducts.size}件の未完了レコードを取得しました"
+                    }
+                    Log.d("MainActivity", "Showing toast: $message")
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(
+                    this@MainActivity,
+                    "データの取得に失敗しました: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                progressBar.visibility = View.GONE
+            }
+        }
     }
 
     private fun updateButtonStates() {
