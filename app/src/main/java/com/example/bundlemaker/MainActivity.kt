@@ -195,6 +195,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 同期ボタン
+        syncBtn.isEnabled = true
         syncBtn.setOnClickListener {
             lifecycleScope.launch {
                 sendCompletedRecordsToServer()
