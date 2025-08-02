@@ -85,13 +85,13 @@ class MainActivity : AppCompatActivity() {
                                 selectedRowIndex = currentProducts.size - 1
                             }
                             adapter.selectedPosition = selectedRowIndex
-                            adapter.notifyDataSetChanged()
+                            adapter.notifyItemChanged(selectedRowIndex)
                             Toast.makeText(this@MainActivity, "製造番号が見つかりました", Toast.LENGTH_SHORT).show()
                         } else {
                             currentProducts.add(product)
                             selectedRowIndex = currentProducts.size - 1
                             adapter.selectedPosition = selectedRowIndex
-                            adapter.notifyDataSetChanged()
+                            adapter.notifyItemInserted(selectedRowIndex)
                             Toast.makeText(this@MainActivity, "新規製造番号を追加しました", Toast.LENGTH_SHORT).show()
                         }
                         updateButtonState()

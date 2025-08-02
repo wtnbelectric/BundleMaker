@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">BundleMaker</string>
     <string name="accessibility_product_list">製品一覧</string>
+    <string name="confirm_title">確認画面</string>
+    <string name="confirm_register">登録</string>
+    <string name="confirm_modify">修正</string>
+    <string name="confirm_cancel">キャンセル</string>
+    <string name="product_serial">製造No.</string>
+    <string name="robot_serial">ロボNo.</string>
+    <string name="control_serial">コンNo.</string>
 </resources>

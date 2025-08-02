@@ -25,8 +25,8 @@ class ConfirmActivity : AppCompatActivity() {
         modifyBtn = findViewById(R.id.confirm_modify_button)
         cancelBtn = findViewById(R.id.confirm_cancel_button)
 
-        // IntentからProductリストを受け取る
-        products = (intent.getSerializableExtra("products") as? ArrayList<Product>) ?: arrayListOf()
+        // 非推奨APIを使わずに取得
+        products = intent.getSerializableExtra("products") as? ArrayList<Product> ?: arrayListOf()
 
         adapter = ProductAdapter(products.toMutableList())
         recyclerView.adapter = adapter

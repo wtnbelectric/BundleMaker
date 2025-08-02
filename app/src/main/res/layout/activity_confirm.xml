@@ -10,7 +10,7 @@
         android:id="@+id/confirm_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="確認画面"
+        android:text="@string/confirm_title"
         android:textSize="18sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -29,26 +29,30 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        style="?android:attr/buttonBarStyle">
 
         <Button
             android:id="@+id/confirm_register_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="登録" />
+            android:text="@string/confirm_register"
+            style="?android:attr/buttonBarButtonStyle" />
 
         <Button
             android:id="@+id/confirm_modify_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="修正"
+            android:text="@string/confirm_modify"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_marginStart="16dp" />
 
         <Button
             android:id="@+id/confirm_cancel_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="キャンセル"
+            android:text="@string/confirm_cancel"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_marginStart="16dp" />
     </LinearLayout>
 </LinearLayout>
