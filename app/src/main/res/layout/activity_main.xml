@@ -2,59 +2,22 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <!-- タイトル -->
     <TextView
-        android:id="@+id/title"
+        android:id="@+id/title_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="シリアル番号紐づけアプリ プロトタイプ版"
         android:textSize="18sp"
         android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:padding="8dp"/>
-
-    <!-- 左上：確認ボタン -->
-    <Button
-        android:id="@+id/confirm_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="確認"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_margin="8dp"/>
-
-    <!-- 右上：同期ボタン（リフレッシュアイコンに変更） -->
-    <ImageButton
-        android:id="@+id/sync_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:minWidth="48dp"
-        android:minHeight="48dp"
-        android:padding="12dp"
-        android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_popup_sync"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="同期"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="8dp"/>
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ボタン群（水平3分割） -->
     <LinearLayout
@@ -62,11 +25,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title_text"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp"
-        android:weightSum="3">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <Button
             android:id="@+id/product_serial_search_button"
@@ -99,8 +60,7 @@
         android:background="?attr/colorPrimaryVariant"
         app:layout_constraintTop_toBottomOf="@id/button_group"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:padding="4dp">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:id="@+id/header_product_serial"
@@ -110,7 +70,6 @@
             android:text="製造No."
             android:textStyle="bold"
             android:textSize="10sp"/>
-
         <TextView
             android:id="@+id/header_robot_serial"
             android:layout_width="0dp"
@@ -119,7 +78,6 @@
             android:text="ロボNo."
             android:textStyle="bold"
             android:textSize="10sp"/>
-
         <TextView
             android:id="@+id/header_control_serial"
             android:layout_width="0dp"
@@ -128,35 +86,26 @@
             android:text="コンNo."
             android:textStyle="bold"
             android:textSize="10sp"/>
-
         <TextView
             android:id="@+id/header_sales_id"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="商談No."
-            android:textStyle="bold"
-            android:textSize="10sp"
             android:visibility="gone"/>
-
         <TextView
             android:id="@+id/header_created_at"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="発番時刻"
-            android:textStyle="bold"
-            android:textSize="10sp"
             android:visibility="gone"/>
-
         <TextView
             android:id="@+id/header_updated_at"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="採番時刻"
-            android:textStyle="bold"
-            android:textSize="10sp"
             android:visibility="gone"/>
     </LinearLayout>
 
@@ -165,13 +114,10 @@
         android:id="@+id/product_table"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:contentDescription="製品一覧テーブル"
         app:layout_constraintTop_toBottomOf="@id/product_table_header"
         app:layout_constraintBottom_toTopOf="@id/commit_button"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- 右下：確定ボタン -->
     <Button
@@ -181,5 +127,26 @@
         android:text="確定"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"/>
+
+    <!-- 右上：同期ボタン（リフレッシュアイコンに変更） -->
+    <ImageButton
+        android:id="@+id/sync_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_popup_sync"
+        android:contentDescription="同期"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"/>
+
+    <!-- 左上：確認ボタン -->
+    <Button
+        android:id="@+id/confirm_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="確認"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         android:layout_margin="16dp"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

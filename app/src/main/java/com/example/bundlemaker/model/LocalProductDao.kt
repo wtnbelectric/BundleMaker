@@ -21,5 +21,11 @@ interface LocalProductDao {
 
     @Query("DELETE FROM local_products")
     suspend fun deleteAll()
+
+    @Query("UPDATE local_products SET sync_status = :newStatus WHERE product_serial = :serial")
+    suspend fun updateSyncStatus(serial: String, newStatus: Int)
+
+    @Query("SELECT * FROM local_products WHERE product_serial = :serial LIMIT 1")
+    suspend fun getProductBySerial(serial: String): LocalProduct?
 }
 
