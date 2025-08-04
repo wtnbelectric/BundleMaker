@@ -59,7 +59,9 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.product_table)
 
         adapter = ProductAdapter(currentProducts)
+
         recyclerView.adapter = adapter
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
         // ボタン初期状態
         updateButtonState()
@@ -196,20 +198,34 @@ class MainActivity : AppCompatActivity() {
 
         // 同期ボタン
         syncBtn.isEnabled = true
+        confirmBtn.isEnabled = true
+
         syncBtn.setOnClickListener {
             lifecycleScope.launch {
+                // 1. 完成レコードをサーバーへ送信
                 sendCompletedRecordsToServer()
-                fetchIncompleteRecordsFromServer()
+                // 2. サーバーから未完成レコード取得→RoomDBへ保存
+                fetchAndSaveIncompleteRecords()
+                // 3. RoomDBの内容をRecyclerViewに表示
                 refreshProductList()
             }
         }
 
-        // 確認ボタン
         confirmBtn.setOnClickListener {
             lifecycleScope.launch {
-                val products = fetchAllRecordsFromServer()
+                val db = Room.databaseBuilder(
+                    applicationContext,
+                    AppDatabase::class.java,
+                    "local_products"
+                ).build()
+                val allProducts = withContext(Dispatchers.IO) {
+                    db.localProductDao().getAll().map { it.toProduct() }
+                }
+                currentProducts.clear()
+                currentProducts.addAll(allProducts)
+                adapter.notifyDataSetChanged()
                 val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
-                intent.putExtra("products", ArrayList(products))
+                intent.putExtra("products", ArrayList(allProducts))
                 startActivity(intent)
             }
         }
@@ -238,6 +254,37 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // サーバーから未完成レコード取得→RoomDBへ保存
+    private suspend fun fetchAndSaveIncompleteRecords() {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.10.104:5000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val api = retrofit.create(ProductApiService::class.java)
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "local_products"
+        ).build()
+        val response = withContext(Dispatchers.IO) { api.getIncompleteProducts() }
+        if (response.isSuccessful) {
+            response.body()?.forEach { prod ->
+                val localProduct = LocalProduct(
+                    product_serial = prod.product_serial,
+                    robot_serial = prod.robot_serial ?: "",
+                    control_serial = prod.control_serial ?: "",
+                    created_at = prod.created_at ?: System.currentTimeMillis(),
+                    updated_at = prod.updated_at,
+                    sync_status = 0 // 未完成
+                )
+                withContext(Dispatchers.IO) {
+                    db.localProductDao().insert(localProduct)
+                }
+            }
+        }
+    }
+
+    // RoomDBの完成レコードのみサーバー送信
     private suspend fun sendCompletedRecordsToServer() {
         val db = Room.databaseBuilder(
             applicationContext,
@@ -245,10 +292,11 @@ class MainActivity : AppCompatActivity() {
             "local_products"
         ).build()
         val completed = withContext(Dispatchers.IO) {
-            db.localProductDao().getPending() // Get all pending sync records
+            db.localProductDao().getCompleted()
         }
+
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.72:5000/")
+            .baseUrl("http://192.168.10.104:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -260,6 +308,7 @@ class MainActivity : AppCompatActivity() {
                     robot_serial = localProduct.robot_serial,
                     control_serial = localProduct.control_serial
                 )
+                Log.d("API", "送信データ: $request")
                 val response = withContext(Dispatchers.IO) {
                     try {
                         api.postProduct(request)
@@ -268,7 +317,6 @@ class MainActivity : AppCompatActivity() {
                         null
                     }
                 }
-                
                 response?.let { res ->
                     if (res.isSuccessful) {
                         withContext(Dispatchers.IO) {
@@ -287,47 +335,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun fetchIncompleteRecordsFromServer() {
+    private suspend fun fetchIncompleteRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://your-server-url/")
+            .baseUrl("http://192.168.10.104:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
-        try {
+        return try {
             val response = withContext(Dispatchers.IO) { api.getIncompleteProducts() }
             if (response.isSuccessful) {
-                val incompleteList = response.body() ?: emptyList()
-                val db = Room.databaseBuilder(
-                    applicationContext,
-                    AppDatabase::class.java,
-                    "local_products"
-                ).build()
-                withContext(Dispatchers.IO) {
-                    for (prod in incompleteList) {
-                        db.localProductDao().insert(
-                            LocalProduct(
-                                product_serial = prod.product_serial,
-                                robot_serial = prod.robot_serial,
-                                control_serial = prod.control_serial,
-                                sales_id = prod.sales_id,
-                                created_at = prod.created_at ?: System.currentTimeMillis(),
-                                updated_at = prod.updated_at,
-                                sync_status = 0
-                            )
-                        )
-                    }
-                }
+                response.body()?.map { prod ->
+                    Product(
+                        product_serial = prod.product_serial,
+                        robot_serial = prod.robot_serial,
+                        control_serial = prod.control_serial,
+                        sales_id = prod.sales_id,
+                        created_at = prod.created_at,
+                        updated_at = prod.updated_at,
+                        isLocalOnly = false
+                    )
+                } ?: emptyList()
             } else {
                 Log.e("API", "未完成レコード取得失敗: ${response.errorBody()?.string()}")
+                emptyList()
             }
         } catch (e: Exception) {
             Log.e("API", "未完成レコード取得例外: ${e.message}")
+            emptyList()
         }
     }
 
     private suspend fun fetchAllRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.72:5000/")
+            .baseUrl("http://192.168.10.104:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -355,17 +395,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // RecyclerViewはRoomDBの内容を表示
     private suspend fun refreshProductList() {
         val db = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
             "local_products"
         ).build()
-        val products = withContext(Dispatchers.IO) {
-            db.localProductDao().getAll().map { localProduct: LocalProduct -> localProduct.toProduct() }
+        val allProducts = withContext(Dispatchers.IO) {
+            db.localProductDao().getAll().map { it.toProduct() }
         }
         currentProducts.clear()
-        currentProducts.addAll(products)
+        currentProducts.addAll(allProducts)
         adapter.notifyDataSetChanged()
     }
 
