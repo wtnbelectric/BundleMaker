@@ -10,8 +10,8 @@ interface LocalProductDao {
     @Query("SELECT * FROM local_products ORDER BY product_serial ASC")
     suspend fun getAll(): List<LocalProduct>
 
-    @Query("SELECT * FROM local_products WHERE sync_status = 0 ORDER BY created_at DESC")
-    suspend fun getPending(): List<LocalProduct>
+    @Query("SELECT * FROM local_products WHERE sync_status = 0 ORDER BY product_serial ASC")
+    fun getIncomplete(): List<LocalProduct>
 
     @Update
     suspend fun update(product: LocalProduct)

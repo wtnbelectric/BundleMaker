@@ -402,11 +402,11 @@ class MainActivity : AppCompatActivity() {
             AppDatabase::class.java,
             "local_products"
         ).build()
-        val allProducts = withContext(Dispatchers.IO) {
-            db.localProductDao().getAll().map { it.toProduct() }
+        val incompleteProducts = withContext(Dispatchers.IO) {
+            db.localProductDao().getIncomplete().map { it.toProduct() }
         }
         currentProducts.clear()
-        currentProducts.addAll(allProducts)
+        currentProducts.addAll(incompleteProducts)
         adapter.notifyDataSetChanged()
     }
 
