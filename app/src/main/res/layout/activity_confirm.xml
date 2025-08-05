@@ -3,74 +3,56 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="16dp">
 
+    <!-- タイトル -->
     <TextView
         android:id="@+id/confirm_title"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="入力内容の確認"
+        android:text="@string/confirm_title"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:gravity="center"
+        android:paddingBottom="8dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="製造No."/>
-    <TextView
-        android:id="@+id/confirm_product_serial"
+    <!-- レコード一覧表示 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/confirm_product_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingBottom="8dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ロボNo."/>
-    <TextView
-        android:id="@+id/confirm_robot_serial"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="コンNo."/>
-    <TextView
-        android:id="@+id/confirm_control_serial"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:layout_marginBottom="24dp"/>
-
+    <!-- ボタン群 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        style="?android:attr/buttonBarStyle">
 
         <Button
             android:id="@+id/confirm_register_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="登録"
-            android:layout_marginEnd="16dp"/>
+            android:text="@string/confirm_register"
+            style="?android:attr/buttonBarButtonStyle" />
 
         <Button
             android:id="@+id/confirm_modify_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="修正"
-            android:layout_marginEnd="16dp"/>
+            android:text="@string/confirm_modify"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_marginStart="16dp" />
 
         <Button
             android:id="@+id/confirm_cancel_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="キャンセル"/>
+            android:text="@string/confirm_cancel"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_marginStart="16dp" />
     </LinearLayout>
 </LinearLayout>

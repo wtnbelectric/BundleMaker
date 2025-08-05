@@ -3,22 +3,28 @@ package com.example.bundlemaker
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
+import com.example.bundlemaker.ConfirmActivity
 import com.example.bundlemaker.adapter.ProductAdapter
 import com.example.bundlemaker.model.AppDatabase
 import com.example.bundlemaker.model.LocalProduct
 import com.example.bundlemaker.model.Product
 import com.example.bundlemaker.network.ProductApiService
 import com.example.bundlemaker.network.ProductRequest
+import com.example.bundlemaker.network.ProductResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,7 +32,16 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var productAdapter: ProductAdapter
+
+    private lateinit var productSerialSearchBtn: Button
+    private lateinit var robotSerialEnterBtn: Button
+    private lateinit var controllerSerialEnterBtn: Button
+    private lateinit var commitBtn: Button
+    private lateinit var syncBtn: ImageButton
+    private lateinit var confirmBtn: Button
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: ProductAdapter
+
     private var currentProducts: MutableList<Product> = mutableListOf()
     private var selectedRowIndex: Int = -1
 
@@ -34,226 +49,377 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
-        // ボタン取得
-        val productSerialBtn = findViewById<Button>(R.id.product_serial_search_button)
-        val robotSerialBtn = findViewById<Button>(R.id.robot_serial_enter_button)
-        val controllerSerialBtn = findViewById<Button>(R.id.controller_serial_enter_button)
-        val commitBtn = findViewById<Button>(R.id.commit_button)
-        val syncBtn = findViewById<ImageButton>(R.id.sync_button)
-        val confirmBtn = findViewById<Button>(R.id.confirm_button)
+        productSerialSearchBtn = findViewById(R.id.product_serial_search_button)
+        robotSerialEnterBtn = findViewById(R.id.robot_serial_enter_button)
+        controllerSerialEnterBtn = findViewById(R.id.controller_serial_enter_button)
+        commitBtn = findViewById(R.id.commit_button)
+        syncBtn = findViewById(R.id.sync_button)
+        confirmBtn = findViewById(R.id.confirm_button)
+        recyclerView = findViewById(R.id.product_table)
 
-        // RecyclerViewセットアップ
-        val recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.product_table)
-        productAdapter = ProductAdapter { position ->
-            selectedRowIndex = position
-            updateButtonStates()
-        }
-        recyclerView.adapter = productAdapter
-        productAdapter.setProducts(currentProducts)
+        adapter = ProductAdapter(currentProducts)
 
-        // ボタンリスナー
-        productSerialBtn.setOnClickListener {
-            // 製造番号入力ダイアログ表示
-            val editText = EditText(this)
-            editText.hint = "製造番号を入力"
-            AlertDialog.Builder(this)
-                .setTitle("製造番号入力")
-                .setView(editText)
-                .setPositiveButton("追加") { _, _ ->
-                    val serial = editText.text.toString().trim()
-                    if (serial.isNotEmpty()) {
-                        // 重複チェック
-                        if (currentProducts.any { it.product_serial == serial }) {
-                            Toast.makeText(this, "同じ製造番号が既に存在します", Toast.LENGTH_SHORT).show()
-                        } else {
-                            currentProducts.add(Product(product_serial = serial))
-                            productAdapter.setProducts(currentProducts)
-                            selectedRowIndex = currentProducts.lastIndex
-                            updateButtonStates()
+        recyclerView.adapter = adapter
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        // ボタン初期状態
+        updateButtonState()
+
+        // 製品シリアル検索
+        productSerialSearchBtn.setOnClickListener {
+            showInputDialog("製造番号を入力してください") { serial ->
+                if (serial.isNotBlank()) {
+                    lifecycleScope.launch {
+                        val db = Room.databaseBuilder(
+                            applicationContext,
+                            AppDatabase::class.java,
+                            "local_products"
+                        ).build()
+                        val localProduct = withContext(Dispatchers.IO) {
+                            db.localProductDao().getProductBySerial(serial)
                         }
-                    } else {
-                        Toast.makeText(this, "製造番号を入力してください", Toast.LENGTH_SHORT).show()
+                        val product = localProduct?.let { it.toProduct() } ?: Product(product_serial = serial)
+                        if (localProduct != null) {
+                            selectedRowIndex = currentProducts.indexOfFirst { p -> p.product_serial == serial }
+                            if (selectedRowIndex == -1) {
+                                currentProducts.add(product)
+                                selectedRowIndex = currentProducts.size - 1
+                            }
+                            adapter.selectedPosition = selectedRowIndex
+                            adapter.notifyItemChanged(selectedRowIndex)
+                            Toast.makeText(this@MainActivity, "製造番号が見つかりました", Toast.LENGTH_SHORT).show()
+                        } else {
+                            currentProducts.add(product)
+                            selectedRowIndex = currentProducts.size - 1
+                            adapter.selectedPosition = selectedRowIndex
+                            adapter.notifyItemInserted(selectedRowIndex)
+                            Toast.makeText(this@MainActivity, "新規製造番号を追加しました", Toast.LENGTH_SHORT).show()
+                        }
+                        updateButtonState()
                     }
                 }
-                .setNegativeButton("キャンセル", null)
-                .show()
-        }
-
-        robotSerialBtn.setOnClickListener {
-            // 選択行のrobot_serialを入力・更新
-            if (selectedRowIndex in currentProducts.indices) {
-                val editText = EditText(this)
-                editText.hint = "ロボットシリアル番号を入力"
-                AlertDialog.Builder(this)
-                    .setTitle("ロボットシリアル番号入力")
-                    .setView(editText)
-                    .setPositiveButton("入力") { _, _ ->
-                        val serial = editText.text.toString().trim()
-                        if (serial.isNotEmpty()) {
-                            currentProducts[selectedRowIndex].robot_serial = serial
-                            productAdapter.notifyItemChanged(selectedRowIndex)
-                            updateButtonStates()
-                        } else {
-                            Toast.makeText(this, "ロボットシリアル番号を入力してください", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    .setNegativeButton("キャンセル", null)
-                    .show()
             }
         }
 
-        controllerSerialBtn.setOnClickListener {
-            // 選択行のcontrol_serialを入力・更新
-            if (selectedRowIndex in currentProducts.indices) {
-                val editText = EditText(this)
-                editText.hint = "コントローラシリアル番号を入力"
-                AlertDialog.Builder(this)
-                    .setTitle("コントローラシリアル番号入力")
-                    .setView(editText)
-                    .setPositiveButton("入力") { _, _ ->
-                        val serial = editText.text.toString().trim()
-                        if (serial.isNotEmpty()) {
-                            currentProducts[selectedRowIndex].control_serial = serial
-                            productAdapter.notifyItemChanged(selectedRowIndex)
-                            updateButtonStates()
-                        } else {
-                            Toast.makeText(this, "コントローラシリアル番号を入力してください", Toast.LENGTH_SHORT).show()
+        robotSerialEnterBtn.setOnClickListener {
+            if (selectedRowIndex >= 0) {
+                showInputDialog("ロボットシリアル番号を入力してください") { robotSerial ->
+                    if (robotSerial.isNotBlank()) {
+                        val product = currentProducts[selectedRowIndex]
+                        product.robot_serial = robotSerial
+                        adapter.notifyItemChanged(selectedRowIndex)
+                        lifecycleScope.launch {
+                            val db = Room.databaseBuilder(
+                                applicationContext,
+                                AppDatabase::class.java,
+                                "local_products"
+                            ).build()
+                            withContext(Dispatchers.IO) {
+                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial) ?: LocalProduct(
+                                    product_serial = product.product_serial,
+                                    robot_serial = robotSerial,
+                                    created_at = System.currentTimeMillis(),
+                                    updated_at = System.currentTimeMillis()
+                                )
+                                db.localProductDao().insert(localProduct)
+                            }
                         }
+                        updateButtonState()
                     }
-                    .setNegativeButton("キャンセル", null)
-                    .show()
+                }
+            }
+        }
+
+        controllerSerialEnterBtn.setOnClickListener {
+            if (selectedRowIndex >= 0) {
+                showInputDialog("コントローラシリアル番号を入力してください") { controlSerial ->
+                    if (controlSerial.isNotBlank()) {
+                        val product = currentProducts[selectedRowIndex]
+                        product.control_serial = controlSerial
+                        adapter.notifyItemChanged(selectedRowIndex)
+                        lifecycleScope.launch {
+                            val db = Room.databaseBuilder(
+                                applicationContext,
+                                AppDatabase::class.java,
+                                "local_products"
+                            ).build()
+                            withContext(Dispatchers.IO) {
+                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial) ?: LocalProduct(
+                                    product_serial = product.product_serial,
+                                    control_serial = controlSerial,
+                                    created_at = System.currentTimeMillis(),
+                                    updated_at = System.currentTimeMillis()
+                                )
+                                db.localProductDao().insert(localProduct)
+                            }
+                        }
+                        updateButtonState()
+                    }
+                }
             }
         }
 
         commitBtn.setOnClickListener {
-            // 選択行の全項目が入力済みならupdated_atを更新し確定
-            if (selectedRowIndex in currentProducts.indices) {
-                val p = currentProducts[selectedRowIndex]
-                if (!p.product_serial.isNullOrBlank() && !p.robot_serial.isNullOrBlank() && !p.control_serial.isNullOrBlank()) {
-                    currentProducts[selectedRowIndex] = p.copy(updated_at = System.currentTimeMillis())
-                    productAdapter.setProducts(currentProducts)
+            if (selectedRowIndex >= 0) {
+                val product = currentProducts[selectedRowIndex]
+                if (product.product_serial.isNotBlank() &&
+                    !product.robot_serial.isNullOrBlank() &&
+                    !product.control_serial.isNullOrBlank()
+                ) {
+                    product.updated_at = System.currentTimeMillis()
+                    adapter.notifyItemChanged(selectedRowIndex)
+                    lifecycleScope.launch {
+                        val db = Room.databaseBuilder(
+                            applicationContext,
+                            AppDatabase::class.java,
+                            "local_products"
+                        ).build()
+                        withContext(Dispatchers.IO) {
+                            val localProduct = LocalProduct(
+                                product_serial = product.product_serial,
+                                robot_serial = product.robot_serial ?: "",
+                                control_serial = product.control_serial ?: "",
+                                created_at = System.currentTimeMillis(),
+                                updated_at = System.currentTimeMillis(),
+                                sync_status = 1 // Mark as completed
+                            )
+                            db.localProductDao().insert(localProduct)
+                        }
+                    }
+                    Toast.makeText(this, "レコードを確定しました", Toast.LENGTH_SHORT).show()
+                    // 新しい行の準備
                     selectedRowIndex = -1
-                    updateButtonStates()
+                    adapter.selectedPosition = -1
+                    updateButtonState()
                 }
             }
         }
 
+        // 同期ボタン
+        syncBtn.isEnabled = true
+        confirmBtn.isEnabled = true
+
         syncBtn.setOnClickListener {
-            // サーバーへ完成レコード送信・未完成レコード取得
             lifecycleScope.launch {
-                // 完成レコードのみ抽出
-                val completed = currentProducts.filter {
-                    !it.product_serial.isNullOrBlank() &&
-                    !it.robot_serial.isNullOrBlank() &&
-                    !it.control_serial.isNullOrBlank() &&
-                    it.updated_at != null
-                }
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("http://your-server-url/") // サーバーURLを適宜修正
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                val api = retrofit.create(ProductApiService::class.java)
-                var successCount = 0
-                var failCount = 0
-
-                // 完成レコード送信
-                for (product in completed) {
-                    val req = ProductRequest(
-                        product_serial = product.product_serial,
-                        robot_serial = product.robot_serial,
-                        control_serial = product.control_serial,
-                        sales_id = product.sales_id
-                    )
-                    val resp = withContext(Dispatchers.IO) {
-                        try {
-                            // ↓ここを正しいメソッド名に修正
-                            val response = api.postProduct(req)
-                            response.isSuccessful
-                        } catch (e: Exception) {
-                            false
-                        }
-                    }
-                    if (resp) successCount++ else failCount++
-                }
-
-                // 未完成レコード取得
-                val incomplete = withContext(Dispatchers.IO) {
-                    try {
-                        val response = api.getIncompleteProducts()
-                        if (response.isSuccessful) {
-                            // ↓ここでList<Product>にキャスト
-                            response.body() as? List<Product> ?: emptyList()
-                        } else emptyList()
-                    } catch (e: Exception) {
-                        emptyList<Product>()
-                    }
-                }
-                // 画面に反映
-                currentProducts.clear()
-                currentProducts.addAll(incomplete)
-                productAdapter.setProducts(currentProducts)
-                selectedRowIndex = -1
-                updateButtonStates()
-
-                Toast.makeText(
-                    this@MainActivity,
-                    "送信: $successCount 件, 失敗: $failCount 件\n未完成データを再取得しました",
-                    Toast.LENGTH_LONG
-                ).show()
+                // 1. 完成レコードをサーバーへ送信
+                sendCompletedRecordsToServer()
+                // 2. サーバーから未完成レコード取得→RoomDBへ保存
+                fetchAndSaveIncompleteRecords()
+                // 3. RoomDBの内容をRecyclerViewに表示
+                refreshProductList()
             }
         }
 
         confirmBtn.setOnClickListener {
-            // APIで全てのレコードを取得し、確認画面で表示
             lifecycleScope.launch {
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("http://your-server-url/") // サーバーURLを適宜修正
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                val api = retrofit.create(ProductApiService::class.java)
+                val db = Room.databaseBuilder(
+                    applicationContext,
+                    AppDatabase::class.java,
+                    "local_products"
+                ).build()
                 val allProducts = withContext(Dispatchers.IO) {
-                    try {
-                        val response = api.getAllProducts()
-                        if (response.isSuccessful) {
-                            response.body() as? List<Product> ?: emptyList()
-                        } else emptyList()
-                    } catch (e: Exception) {
-                        emptyList<Product>()
-                    }
+                    db.localProductDao().getAll().map { it.toProduct() }
                 }
+                currentProducts.clear()
+                currentProducts.addAll(allProducts)
+                adapter.notifyDataSetChanged()
                 val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
-                intent.putExtra("all_products", ArrayList(allProducts))
+                intent.putExtra("products", ArrayList(allProducts))
                 startActivity(intent)
             }
         }
-
-        updateButtonStates()
     }
 
-    private fun updateButtonStates() {
-        val productSerialBtn = findViewById<Button>(R.id.product_serial_search_button)
-        val robotSerialBtn = findViewById<Button>(R.id.robot_serial_enter_button)
-        val controllerSerialBtn = findViewById<Button>(R.id.controller_serial_enter_button)
-        val commitBtn = findViewById<Button>(R.id.commit_button)
+    private fun updateButtonState() {
+        productSerialSearchBtn.isEnabled = true
+        robotSerialEnterBtn.isEnabled = selectedRowIndex >= 0 && currentProducts[selectedRowIndex].product_serial.isNotBlank()
+        controllerSerialEnterBtn.isEnabled = selectedRowIndex >= 0 && !currentProducts[selectedRowIndex].robot_serial.isNullOrBlank()
+        commitBtn.isEnabled = selectedRowIndex >= 0 &&
+                !currentProducts[selectedRowIndex].product_serial.isNullOrBlank() &&
+                !currentProducts[selectedRowIndex].robot_serial.isNullOrBlank() &&
+                !currentProducts[selectedRowIndex].control_serial.isNullOrBlank()
+    }
 
-        productSerialBtn.isEnabled = true
+    private fun showInputDialog(title: String, callback: (String) -> Unit) {
+        val editText = EditText(this)
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(editText)
+            .setPositiveButton("OK") { _, _ ->
+                callback(editText.text.toString())
+            }
+            .setNegativeButton("キャンセル", null)
+            .create()
+        dialog.show()
+    }
 
-        val selected = selectedRowIndex in currentProducts.indices
-        val selectedProduct = if (selected) currentProducts[selectedRowIndex] else null
+    // サーバーから未完成レコード取得→RoomDBへ保存
+    private suspend fun fetchAndSaveIncompleteRecords() {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.10.104:5000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val api = retrofit.create(ProductApiService::class.java)
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "local_products"
+        ).build()
+        val response = withContext(Dispatchers.IO) { api.getIncompleteProducts() }
+        if (response.isSuccessful) {
+            response.body()?.forEach { prod ->
+                val localProduct = LocalProduct(
+                    product_serial = prod.product_serial,
+                    robot_serial = prod.robot_serial ?: "",
+                    control_serial = prod.control_serial ?: "",
+                    created_at = prod.created_at ?: System.currentTimeMillis(),
+                    updated_at = prod.updated_at,
+                    sync_status = 0 // 未完成
+                )
+                withContext(Dispatchers.IO) {
+                    db.localProductDao().insert(localProduct)
+                }
+            }
+        }
+    }
 
-        robotSerialBtn.isEnabled = selected && !selectedProduct?.product_serial.isNullOrBlank()
-        controllerSerialBtn.isEnabled = selected &&
-            !selectedProduct?.product_serial.isNullOrBlank() &&
-            !selectedProduct?.robot_serial.isNullOrBlank()
-        commitBtn.isEnabled = selected &&
-            !selectedProduct?.product_serial.isNullOrBlank() &&
-            !selectedProduct?.robot_serial.isNullOrBlank() &&
-            !selectedProduct?.control_serial.isNullOrBlank()
+    // RoomDBの完成レコードのみサーバー送信
+    private suspend fun sendCompletedRecordsToServer() {
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "local_products"
+        ).build()
+        val completed = withContext(Dispatchers.IO) {
+            db.localProductDao().getCompleted()
+        }
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.10.104:5000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val api = retrofit.create(ProductApiService::class.java)
+
+        for (localProduct in completed) {
+            try {
+                val request = ProductRequest(
+                    product_serial = localProduct.product_serial,
+                    robot_serial = localProduct.robot_serial,
+                    control_serial = localProduct.control_serial
+                )
+                Log.d("API", "送信データ: $request")
+                val response = withContext(Dispatchers.IO) {
+                    try {
+                        api.postProduct(request)
+                    } catch (e: Exception) {
+                        Log.e("API", "API呼び出しエラー: ${e.message}")
+                        null
+                    }
+                }
+                response?.let { res ->
+                    if (res.isSuccessful) {
+                        withContext(Dispatchers.IO) {
+                            db.localProductDao().updateSyncStatus(localProduct.product_serial, 1)
+                        }
+                    } else {
+                        val errorBody = res.errorBody()?.string()
+                        Log.e("API", "送信失敗: $errorBody")
+                    }
+                } ?: run {
+                    Log.e("API", "API呼び出しに失敗しました")
+                }
+            } catch (e: Exception) {
+                Log.e("API", "送信例外: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun fetchIncompleteRecordsFromServer(): List<Product> {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.10.104:5000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val api = retrofit.create(ProductApiService::class.java)
+        return try {
+            val response = withContext(Dispatchers.IO) { api.getIncompleteProducts() }
+            if (response.isSuccessful) {
+                response.body()?.map { prod ->
+                    Product(
+                        product_serial = prod.product_serial,
+                        robot_serial = prod.robot_serial,
+                        control_serial = prod.control_serial,
+                        sales_id = prod.sales_id,
+                        created_at = prod.created_at,
+                        updated_at = prod.updated_at,
+                        isLocalOnly = false
+                    )
+                } ?: emptyList()
+            } else {
+                Log.e("API", "未完成レコード取得失敗: ${response.errorBody()?.string()}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("API", "未完成レコード取得例外: ${e.message}")
+            emptyList()
+        }
+    }
+
+    private suspend fun fetchAllRecordsFromServer(): List<Product> {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.10.104:5000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val api = retrofit.create(ProductApiService::class.java)
+        return try {
+            val response = withContext(Dispatchers.IO) { api.getAllProducts() }
+            if (response.isSuccessful) {
+                response.body()?.map { product ->
+                    Product(
+                        product_serial = product.product_serial,
+                        robot_serial = product.robot_serial,
+                        control_serial = product.control_serial,
+                        sales_id = product.sales_id,
+                        created_at = product.created_at,
+                        updated_at = product.updated_at,
+                        isLocalOnly = false
+                    )
+                } ?: emptyList()
+            } else {
+                Log.e("API", "全レコード取得失敗: ${response.errorBody()?.string()}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("API", "全レコード取得例外: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // RecyclerViewはRoomDBの内容を表示
+    private suspend fun refreshProductList() {
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "local_products"
+        ).build()
+        val allProducts = withContext(Dispatchers.IO) {
+            db.localProductDao().getAll().map { it.toProduct() }
+        }
+        currentProducts.clear()
+        currentProducts.addAll(allProducts)
+        adapter.notifyDataSetChanged()
+    }
+
+    // LocalProduct拡張関数
+    private fun LocalProduct.toProduct(): Product {
+        return Product(
+            product_serial = this.product_serial,
+            robot_serial = this.robot_serial,
+            control_serial = this.control_serial,
+            sales_id = this.sales_id,
+            created_at = this.created_at,
+            updated_at = this.updated_at,
+            isLocalOnly = this.sync_status == 0
+        )
     }
 }

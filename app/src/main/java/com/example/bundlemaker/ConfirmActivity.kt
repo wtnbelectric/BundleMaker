@@ -1,36 +1,46 @@
 package com.example.bundlemaker
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView
+import com.example.bundlemaker.adapter.ProductAdapter
 import com.example.bundlemaker.model.Product
-import java.io.Serializable
 
 class ConfirmActivity : AppCompatActivity() {
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var registerBtn: Button
+    private lateinit var modifyBtn: Button
+    private lateinit var cancelBtn: Button
+    private lateinit var adapter: ProductAdapter
+    private var products: List<Product> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_confirm)
 
-        // すべてのレコードを受け取る
-        val allProducts = intent.getSerializableExtra("all_products") as? ArrayList<Product>
+        recyclerView = findViewById(R.id.confirm_product_list)
+        registerBtn = findViewById(R.id.confirm_register_button)
+        modifyBtn = findViewById(R.id.confirm_modify_button)
+        cancelBtn = findViewById(R.id.confirm_cancel_button)
 
-        val textView = findViewById<TextView>(R.id.confirm_title)
-        if (allProducts != null && allProducts.isNotEmpty()) {
-            val sb = StringBuilder()
-            allProducts.forEachIndexed { idx, p ->
-                sb.append("${idx + 1}: 製造No=${p.product_serial}, ロボNo=${p.robot_serial}, コンNo=${p.control_serial}\n")
-            }
-            textView.text = sb.toString()
-        } else {
-            textView.text = "データがありません"
+        // IntentからProductリストを受け取る
+        products = (intent.getSerializableExtra("products") as? ArrayList<Product>) ?: arrayListOf()
+
+        adapter = ProductAdapter(products.toMutableList())
+        recyclerView.adapter = adapter
+
+        registerBtn.setOnClickListener {
+            // 登録処理（必要に応じて実装）
         }
 
-        val cancelBtn = findViewById<Button>(R.id.confirm_cancel_button)
+        modifyBtn.setOnClickListener {
+            // 修正処理（必要に応じて実装）
+        }
+
         cancelBtn.setOnClickListener {
-            finish()
+            finish() // 元の画面に戻る
         }
     }
 }
