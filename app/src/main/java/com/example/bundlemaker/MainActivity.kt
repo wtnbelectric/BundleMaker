@@ -221,9 +221,6 @@ class MainActivity : AppCompatActivity() {
                 val allProducts = withContext(Dispatchers.IO) {
                     db.localProductDao().getAll().map { it.toProduct() }
                 }
-                currentProducts.clear()
-                currentProducts.addAll(allProducts)
-                adapter.notifyDataSetChanged()
                 val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
                 intent.putExtra("products", ArrayList(allProducts))
                 startActivity(intent)
