@@ -1,5 +1,6 @@
 package com.example.bundlemaker
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var currentProducts: MutableList<Product> = mutableListOf()
     private var selectedRowIndex: Int = -1
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -62,6 +65,21 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.adapter = adapter
         recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        val employeeId = intent.getStringExtra("employee_id")
+        val nameText = findViewById<TextView>(R.id.employee_name_text)
+
+        if (employeeId != null) {
+            lifecycleScope.launch {
+                val db = Room.databaseBuilder(
+                    applicationContext,
+                    AppDatabase::class.java,
+                    "local_products"
+                ).build()
+                val employee = db.employeeDao().getEmployeeById(employeeId)
+                nameText.text = employee?.name ?: "不明な従業員"
+            }
+        }
 
         // ボタン初期状態
         updateButtonState()
@@ -221,13 +239,18 @@ class MainActivity : AppCompatActivity() {
                 val allProducts = withContext(Dispatchers.IO) {
                     db.localProductDao().getAll().map { it.toProduct() }
                 }
-                currentProducts.clear()
-                currentProducts.addAll(allProducts)
-                adapter.notifyDataSetChanged()
                 val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
                 intent.putExtra("products", ArrayList(allProducts))
                 startActivity(intent)
             }
+        }
+
+        val logoutBtn = findViewById<Button>(R.id.logout_button)
+        logoutBtn.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
     }
 
