@@ -1,30 +1,28 @@
 package com.example.bundlemaker
 
-import android.app.AlertDialog
+
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
-import com.example.bundlemaker.ConfirmActivity
 import com.example.bundlemaker.adapter.ProductAdapter
 import com.example.bundlemaker.model.AppDatabase
 import com.example.bundlemaker.model.LocalProduct
 import com.example.bundlemaker.model.Product
 import com.example.bundlemaker.network.ProductApiService
 import com.example.bundlemaker.network.ProductRequest
-import com.example.bundlemaker.network.ProductResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -265,6 +263,10 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("キャンセル", null)
             .create()
+        // editTextにフォーカスを設定
+        editText.requestFocus()
+        // ダイアログ表示時に自動的にキーボードを表示しない
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         dialog.show()
     }
 
