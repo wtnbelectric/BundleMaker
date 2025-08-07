@@ -79,22 +79,24 @@ class MainActivity : AppCompatActivity() {
                         val localProduct = withContext(Dispatchers.IO) {
                             db.localProductDao().getProductBySerial(serial)
                         }
-                        val product = localProduct?.let { it.toProduct() } ?: Product(product_serial = serial)
+
                         if (localProduct != null) {
+                            val product = localProduct.toProduct()
                             selectedRowIndex = currentProducts.indexOfFirst { p -> p.product_serial == serial }
-                            if (selectedRowIndex == -1) {
-                                currentProducts.add(product)
-                                selectedRowIndex = currentProducts.size - 1
+
+                            if (selectedRowIndex != -1) {
+                                // リストに既に存在する場合のみ更新
+                                currentProducts[selectedRowIndex] = product
+                                adapter.selectedPosition = selectedRowIndex
+                                adapter.notifyItemChanged(selectedRowIndex)
+                                recyclerView.scrollToPosition(selectedRowIndex)
+                                Toast.makeText(this@MainActivity, "製造番号が見つかりました", Toast.LENGTH_SHORT).show()
+                            } else {
+                                // リストに存在しない場合は何も追加せずメッセージのみ表示
+                                // Toast.makeText(this@MainActivity, "リストに存在しない製造番号です", Toast.LENGTH_SHORT).show()
                             }
-                            adapter.selectedPosition = selectedRowIndex
-                            adapter.notifyItemChanged(selectedRowIndex)
-                            Toast.makeText(this@MainActivity, "製造番号が見つかりました", Toast.LENGTH_SHORT).show()
                         } else {
-                            currentProducts.add(product)
-                            selectedRowIndex = currentProducts.size - 1
-                            adapter.selectedPosition = selectedRowIndex
-                            adapter.notifyItemInserted(selectedRowIndex)
-                            Toast.makeText(this@MainActivity, "新規製造番号を追加しました", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "製造番号が見つかりません", Toast.LENGTH_SHORT).show()
                         }
                         updateButtonState()
                     }
@@ -102,6 +104,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // ロボットシリアル番号入力後の処理
         robotSerialEnterBtn.setOnClickListener {
             if (selectedRowIndex >= 0) {
                 showInputDialog("ロボットシリアル番号を入力してください") { robotSerial ->
@@ -109,21 +112,25 @@ class MainActivity : AppCompatActivity() {
                         val product = currentProducts[selectedRowIndex]
                         product.robot_serial = robotSerial
                         adapter.notifyItemChanged(selectedRowIndex)
+
                         lifecycleScope.launch {
                             val db = Room.databaseBuilder(
                                 applicationContext,
                                 AppDatabase::class.java,
                                 "local_products"
                             ).build()
+
                             withContext(Dispatchers.IO) {
-                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial) ?: LocalProduct(
-                                    product_serial = product.product_serial,
-                                    robot_serial = robotSerial,
-                                    created_at = System.currentTimeMillis(),
-                                    updated_at = System.currentTimeMillis()
-                                )
-                                db.localProductDao().insert(localProduct)
+                                // 既存のレコードを取得して更新
+                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial)
+                                if (localProduct != null) {
+                                    localProduct.robot_serial = robotSerial
+                                    localProduct.updated_at = System.currentTimeMillis()
+                                    db.localProductDao().update(localProduct)
+                                }
                             }
+                            // リストを最新の状態に更新
+                            refreshProductList()
                         }
                         updateButtonState()
                     }
@@ -138,21 +145,25 @@ class MainActivity : AppCompatActivity() {
                         val product = currentProducts[selectedRowIndex]
                         product.control_serial = controlSerial
                         adapter.notifyItemChanged(selectedRowIndex)
+
                         lifecycleScope.launch {
                             val db = Room.databaseBuilder(
                                 applicationContext,
                                 AppDatabase::class.java,
                                 "local_products"
                             ).build()
+
                             withContext(Dispatchers.IO) {
-                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial) ?: LocalProduct(
-                                    product_serial = product.product_serial,
-                                    control_serial = controlSerial,
-                                    created_at = System.currentTimeMillis(),
-                                    updated_at = System.currentTimeMillis()
-                                )
-                                db.localProductDao().insert(localProduct)
+                                // 既存のレコードを取得して更新
+                                val localProduct = db.localProductDao().getProductBySerial(product.product_serial)
+                                if (localProduct != null) {
+                                    localProduct.control_serial = controlSerial
+                                    localProduct.updated_at = System.currentTimeMillis()
+                                    db.localProductDao().update(localProduct)
+                                }
                             }
+                            // リストを最新の状態に更新
+                            refreshProductList()
                         }
                         updateButtonState()
                     }
@@ -202,12 +213,16 @@ class MainActivity : AppCompatActivity() {
 
         syncBtn.setOnClickListener {
             lifecycleScope.launch {
-                // 1. 完成レコードをサーバーへ送信
+                // 1. サーバーに完了レコードを送信
                 sendCompletedRecordsToServer()
-                // 2. サーバーから未完成レコード取得→RoomDBへ保存
+
+                // 2. サーバーから未完了レコードを取得してRoomDBに保存
                 fetchAndSaveIncompleteRecords()
-                // 3. RoomDBの内容をRecyclerViewに表示
+
+                // 3. RoomDBから最新のデータを取得して表示
                 refreshProductList()
+
+                Toast.makeText(this@MainActivity, "同期が完了しました", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -218,9 +233,11 @@ class MainActivity : AppCompatActivity() {
                     AppDatabase::class.java,
                     "local_products"
                 ).build()
+
                 val allProducts = withContext(Dispatchers.IO) {
                     db.localProductDao().getAll().map { it.toProduct() }
                 }
+
                 val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
                 intent.putExtra("products", ArrayList(allProducts))
                 startActivity(intent)
@@ -254,7 +271,7 @@ class MainActivity : AppCompatActivity() {
     // サーバーから未完成レコード取得→RoomDBへ保存
     private suspend fun fetchAndSaveIncompleteRecords() {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.10.104:5000/")
+            .baseUrl("http://192.168.5.76:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -293,7 +310,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.10.104:5000/")
+            .baseUrl("http://192.168.5.76:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -334,7 +351,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun fetchIncompleteRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.10.104:5000/")
+            .baseUrl("http://192.168.5.76:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -364,7 +381,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun fetchAllRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.10.104:5000/")
+            .baseUrl("http://192.168.5.76:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -399,12 +416,19 @@ class MainActivity : AppCompatActivity() {
             AppDatabase::class.java,
             "local_products"
         ).build()
-        val incompleteProducts = withContext(Dispatchers.IO) {
+
+        // サーバーから取得した未完成レコードのみを表示
+        val products = withContext(Dispatchers.IO) {
             db.localProductDao().getIncomplete().map { it.toProduct() }
         }
-        currentProducts.clear()
-        currentProducts.addAll(incompleteProducts)
-        adapter.notifyDataSetChanged()
+
+        // UIスレッドでアダプターを更新
+        runOnUiThread {
+            currentProducts.clear()
+            currentProducts.addAll(products)
+            adapter.updateProducts(products)
+            updateButtonState()
+        }
     }
 
     // LocalProduct拡張関数

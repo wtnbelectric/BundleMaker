@@ -2,10 +2,12 @@ package com.example.bundlemaker
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bundlemaker.adapter.ProductAdapter
 import com.example.bundlemaker.model.AppDatabase
@@ -29,7 +31,7 @@ class ConfirmActivity : AppCompatActivity() {
         setContentView(R.layout.activity_confirm)
 
         // インテントからデータを取得
-        products = intent.getSerializableExtra("products") as? List<Product> ?: emptyList()
+        // products = intent.getSerializableExtra("products") as? List<Product> ?: emptyList()
 
         recyclerView = findViewById(R.id.confirm_product_list)
         registerBtn = findViewById(R.id.confirm_register_button)
@@ -39,6 +41,11 @@ class ConfirmActivity : AppCompatActivity() {
         // IntentからProductリストを受け取る
         products = (intent.getSerializableExtra("products") as? ArrayList<Product>) ?: arrayListOf()
 
+        // データが正しく取得できているかログ出力（デバッグ用）
+        Log.d("ConfirmActivity", "Received products count: ${products.size}")
+
+        // RecyclerViewの設定
+        recyclerView.layoutManager = LinearLayoutManager(this)  // レイアウトマネージャーの設定を追加
         adapter = ProductAdapter(products.toMutableList())
         recyclerView.adapter = adapter
 

@@ -7,6 +7,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bundlemaker.model.Product
 import com.example.bundlemaker.R
+import kotlin.collections.addAll
+import kotlin.text.clear
 
 class ProductAdapter(
     private val products: MutableList<Product>
@@ -46,4 +48,10 @@ class ProductAdapter(
             notifyDataSetChanged()
         }
     }
+    fun updateProducts(newProducts: List<Product>) {
+        products.clear()
+        products.addAll(newProducts)
+        notifyDataSetChanged()
+    }
 }
+
