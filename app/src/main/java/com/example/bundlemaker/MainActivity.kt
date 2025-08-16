@@ -8,6 +8,8 @@ import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
+import android.annotation.SuppressLint
+import android.widget.TextView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -37,12 +39,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commitBtn: Button
     private lateinit var syncBtn: ImageButton
     private lateinit var confirmBtn: Button
+    private lateinit var logoutBtn: Button
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ProductAdapter
 
     private var currentProducts: MutableList<Product> = mutableListOf()
     private var selectedRowIndex: Int = -1
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,12 +58,24 @@ class MainActivity : AppCompatActivity() {
         commitBtn = findViewById(R.id.commit_button)
         syncBtn = findViewById(R.id.sync_button)
         confirmBtn = findViewById(R.id.confirm_button)
+        logoutBtn = findViewById(R.id.logout_button)
         recyclerView = findViewById(R.id.product_table)
 
         adapter = ProductAdapter(currentProducts)
 
         recyclerView.adapter = adapter
         recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        val employeeId = intent.getStringExtra("employee_id")
+        val nameText = findViewById<TextView>(R.id.employee_name_text)
+
+        if (employeeId != null) {
+            lifecycleScope.launch {
+                val db = AppDatabase.getInstance(applicationContext)
+                val employee = db.employeeDao().getEmployeeById(employeeId)
+                nameText.text = employee?.name ?: "不明な従業員"
+            }
+        }
 
         // ボタン初期状態
         updateButtonState()
@@ -241,6 +257,19 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
+
+        // ログアウトボタン
+        logoutBtn.isEnabled = true
+
+        logoutBtn.setOnClickListener {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("ログアウトしますか？")
+                .setPositiveButton("はい") { _, _ ->
+                    finishAffinity() // アプリ終了
+                }
+                .setNegativeButton("いいえ", null)
+                .show()
+        }
     }
 
     private fun updateButtonState() {
@@ -273,7 +302,7 @@ class MainActivity : AppCompatActivity() {
     // サーバーから未完成レコード取得→RoomDBへ保存
     private suspend fun fetchAndSaveIncompleteRecords() {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.76:5000/")
+            .baseUrl("http://192.168.5.94:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -312,7 +341,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.76:5000/")
+            .baseUrl("http://192.168.5.94:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -353,7 +382,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun fetchIncompleteRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.76:5000/")
+            .baseUrl("http://192.168.5.94:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)
@@ -383,7 +412,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun fetchAllRecordsFromServer(): List<Product> {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.5.76:5000/")
+            .baseUrl("http://192.168.5.94:5000/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val api = retrofit.create(ProductApiService::class.java)

@@ -21,15 +21,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/app/src/main/res/values/strings.xml">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
-              <option name="originalContent" value="&lt;resources&gt;&#10;    &lt;string name=&quot;app_name&quot;&gt;BundleMaker&lt;/string&gt;&#10;    &lt;string name=&quot;accessibility_product_list&quot;&gt;製品一覧&lt;/string&gt;&#10;&lt;/resources&gt;" />
-              <option name="updatedContent" value="&lt;resources&gt;&#13;&#10;    &lt;string name=&quot;app_name&quot;&gt;BundleMaker&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;accessibility_product_list&quot;&gt;製品一覧&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;confirm_title&quot;&gt;確認画面&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;confirm_register&quot;&gt;登録&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;confirm_modify&quot;&gt;修正&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;confirm_cancel&quot;&gt;キャンセル&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;product_serial&quot;&gt;製造No.&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;robot_serial&quot;&gt;ロボNo.&lt;/string&gt;&#13;&#10;    &lt;string name=&quot;control_serial&quot;&gt;コンNo.&lt;/string&gt;&#13;&#10;&lt;/resources&gt;" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
       </map>
     </option>
   </component>
