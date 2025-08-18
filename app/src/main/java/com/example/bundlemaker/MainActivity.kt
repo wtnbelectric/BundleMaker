@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.or
 
 class MainActivity : AppCompatActivity() {
 
@@ -265,7 +266,9 @@ class MainActivity : AppCompatActivity() {
             android.app.AlertDialog.Builder(this)
                 .setTitle("ログアウトしますか？")
                 .setPositiveButton("はい") { _, _ ->
-                    finishAffinity() // アプリ終了
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
                 }
                 .setNegativeButton("いいえ", null)
                 .show()
