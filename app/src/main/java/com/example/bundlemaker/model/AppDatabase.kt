@@ -59,5 +59,17 @@ abstract class AppDatabase : RoomDatabase() {
                 // db.employeeDao().insert(Employee(employeeId = "j0419", name = "渡邊 竜矢"))
             }
         }
+        fun deleteEmployeesNotInCsv(context: Context) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val db = getInstance(context)
+                val assetManager = context.assets
+                val csvIds = assetManager.open("employees.csv").bufferedReader().useLines { lines ->
+                    lines.drop(1).map { it.split(",")[0] }.toSet()
+                }
+                val allEmployees = db.employeeDao().getAllEmployees()
+                val toDelete = allEmployees.filter { it.employeeId !in csvIds }
+                toDelete.forEach { db.employeeDao().delete(it) }
+            }
+        }
     }
 }
