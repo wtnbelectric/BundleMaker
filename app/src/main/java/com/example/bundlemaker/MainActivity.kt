@@ -16,9 +16,13 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.core.view.GravityCompat
+import com.google.android.material.navigation.NavigationView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
+import androidx.drawerlayout.widget.DrawerLayout
 import com.example.bundlemaker.adapter.ProductAdapter
 import com.example.bundlemaker.model.AppDatabase
 import com.example.bundlemaker.model.LocalProduct
@@ -39,10 +43,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var controllerSerialEnterBtn: Button
     private lateinit var commitBtn: Button
     private lateinit var syncBtn: ImageButton
-    private lateinit var confirmBtn: Button
-    private lateinit var logoutBtn: Button
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ProductAdapter
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
 
     private var currentProducts: MutableList<Product> = mutableListOf()
     private var selectedRowIndex: Int = -1
@@ -53,19 +57,68 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        // Initialize views
         productSerialSearchBtn = findViewById(R.id.product_serial_search_button)
         robotSerialEnterBtn = findViewById(R.id.robot_serial_enter_button)
         controllerSerialEnterBtn = findViewById(R.id.controller_serial_enter_button)
         commitBtn = findViewById(R.id.commit_button)
         syncBtn = findViewById(R.id.sync_button)
-        confirmBtn = findViewById(R.id.confirm_button)
-        logoutBtn = findViewById(R.id.logout_button)
         recyclerView = findViewById(R.id.product_table)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
 
-        adapter = ProductAdapter(currentProducts)
+        // Set up the toolbar
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-        recyclerView.adapter = adapter
-        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        // Set up the navigation drawer toggle
+        val toggle = ActionBarDrawerToggle(
+            this, drawerLayout, toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        // Set up navigation item click listener
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_check -> {
+                    lifecycleScope.launch {
+                        val db = Room.databaseBuilder(
+                            applicationContext,
+                            AppDatabase::class.java,
+                            "local_products"
+                        ).build()
+
+                        val allProducts = withContext(Dispatchers.IO) {
+                            db.localProductDao().getAll().map { it.toProduct() }
+                        }
+
+                        val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
+                        intent.putExtra("products", ArrayList(allProducts))
+                        startActivity(intent)
+                    }
+                }
+                R.id.nav_logout -> {
+                    android.app.AlertDialog.Builder(this)
+                        .setTitle("ログアウトしますか？")
+                        .setPositiveButton("はい") { _, _ ->
+                            val intent = Intent(this, LoginActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                        }
+                        .setNegativeButton("いいえ", null)
+                        .show()
+                }
+            }
+            drawerLayout.closeDrawer(GravityCompat.START)
+            true
+        }
+
+        // Set employee name in navigation header
+        // val headerView = navigationView.getHeaderView(0)
+        // val emailText = headerView.findViewById<TextView>(R.id.email_text)
 
         val employeeId = intent.getStringExtra("employee_id")
         val nameText = findViewById<TextView>(R.id.employee_name_text)
@@ -73,10 +126,17 @@ class MainActivity : AppCompatActivity() {
         if (employeeId != null) {
             lifecycleScope.launch {
                 val db = AppDatabase.getInstance(applicationContext)
-                val employee = db.employeeDao().getEmployeeById(employeeId)
-                nameText.text = employee?.name ?: "不明な従業員"
+                val employee = withContext(Dispatchers.IO) {
+                    db.employeeDao().getEmployeeById(employeeId)
+                }
+                val employeeName = employee?.name ?: "不明な従業員"
+                nameText.text = employeeName
             }
         }
+
+        adapter = ProductAdapter(currentProducts)
+        recyclerView.adapter = adapter
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
         // ボタン初期状態
         updateButtonState()
@@ -224,7 +284,6 @@ class MainActivity : AppCompatActivity() {
 
         // 同期ボタン
         syncBtn.isEnabled = true
-        confirmBtn.isEnabled = true
 
         syncBtn.setOnClickListener {
             lifecycleScope.launch {
@@ -239,39 +298,6 @@ class MainActivity : AppCompatActivity() {
 
                 Toast.makeText(this@MainActivity, "同期が完了しました", Toast.LENGTH_SHORT).show()
             }
-        }
-
-        confirmBtn.setOnClickListener {
-            lifecycleScope.launch {
-                val db = Room.databaseBuilder(
-                    applicationContext,
-                    AppDatabase::class.java,
-                    "local_products"
-                ).build()
-
-                val allProducts = withContext(Dispatchers.IO) {
-                    db.localProductDao().getAll().map { it.toProduct() }
-                }
-
-                val intent = Intent(this@MainActivity, ConfirmActivity::class.java)
-                intent.putExtra("products", ArrayList(allProducts))
-                startActivity(intent)
-            }
-        }
-
-        // ログアウトボタン
-        logoutBtn.isEnabled = true
-
-        logoutBtn.setOnClickListener {
-            android.app.AlertDialog.Builder(this)
-                .setTitle("ログアウトしますか？")
-                .setPositiveButton("はい") { _, _ ->
-                    val intent = Intent(this, LoginActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                    startActivity(intent)
-                }
-                .setNegativeButton("いいえ", null)
-                .show()
         }
     }
 

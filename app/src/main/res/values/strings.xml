@@ -8,4 +8,7 @@
     <string name="product_serial">製造No.</string>
     <string name="robot_serial">ロボNo.</string>
     <string name="control_serial">コンNo.</string>
+    <string name="sync">同期</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
 </resources>

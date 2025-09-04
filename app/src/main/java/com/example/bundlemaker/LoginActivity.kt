@@ -32,7 +32,6 @@ class LoginActivity : AppCompatActivity() {
                             .setTitle("従業員一括登録")
                             .setMessage("CSVファイルから従業員をインポートしますか？")
                             .setPositiveButton("はい") { _, _ ->
-                                AppDatabase.deleteEmployeesNotInCsv(applicationContext)
                                 AppDatabase.insertInitialData(applicationContext)
                                 // メイン画面へ遷移
                                 val intent = Intent(this@LoginActivity, MainActivity::class.java)

@@ -22,7 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" android:exported="true" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BundleMaker"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ConfirmActivity" />
     </application>
 

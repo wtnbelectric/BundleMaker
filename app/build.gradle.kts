@@ -52,6 +52,14 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    
+    // Material Design Components
+    implementation("com.google.android.material:material:1.12.0")
+    
+    // Navigation Component
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    
     // Room
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
@@ -69,4 +77,7 @@ dependencies {
     
     // For Hilt with Compose (if you're using Compose)
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // DrawerLayout
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 }
